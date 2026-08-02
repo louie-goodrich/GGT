@@ -1203,14 +1203,27 @@ function submitScore() {
 
 function checkWinConditions() {
   const totals = computeTotals();
+  const currentRound = state.rounds[state.activeRound];
+  const roundComplete = currentRound && currentRound.every(s => s !== null);
 
   if (state.maxScore !== null) {
     const idx = totals.findIndex(t => t !== null && t >= state.maxScore);
     if (idx !== -1) {
-      showMaxAlert(`${state.players[idx].name} hit ${state.maxScore}! Game over!`);
-      setTimeout(endGame, 2000);
+      if (roundComplete) {
+        showMaxAlert(`${state.players[idx].name} hit ${state.maxScore}! Game over!`);
+        setTimeout(endGame, 2000);
+      } else {
+        showMaxAlert(`${state.players[idx].name} hit ${state.maxScore}! Finish the round first.`);
+        state.pendingEnd = true;
+      }
       return;
     }
+  }
+
+  if (state.pendingEnd && roundComplete) {
+    state.pendingEnd = false;
+    setTimeout(endGame, 400);
+    return;
   }
 
   if (state.maxRounds !== null && state.rounds.length >= state.maxRounds) {
