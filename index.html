@@ -635,8 +635,8 @@
 <!-- ═══════════════════════ PIN SCREEN ═══════════════════════ -->
 <div id="pin-screen" class="screen active">
   <div class="pin-wrap">
-    <div class="pin-label">Phone Number</div>
-    <div class="pin-display" id="pin-display">···–····</div>
+    <div class="pin-label">Number</div>
+    <div class="pin-display" id="pin-display">·······</div>
     <div class="pin-wrong-msg" id="pin-wrong-msg">Wrong number 📵</div>
     <div class="pin-numpad">
       <button class="pin-btn" onclick="pinPress('1')">1<span class="pin-sub">&nbsp;</span></button>
@@ -1204,7 +1204,7 @@ let pinInput = '';
 function updatePinDisplay() {
   const d = i => pinInput[i] || '·';
   document.getElementById('pin-display').textContent =
-    `${d(0)}${d(1)}${d(2)}–${d(3)}${d(4)}${d(5)}${d(6)}`;
+    `${d(0)}${d(1)}${d(2)}${d(3)}${d(4)}${d(5)}${d(6)}`;
 }
 
 function pinPress(digit) {
