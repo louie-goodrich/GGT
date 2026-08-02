@@ -900,14 +900,14 @@ function renderSetup() {
       <button class="not-here-btn${p.active ? '' : ' back-in'}" onclick="togglePlayerActive(${i})">
         ${p.active ? '😔 Not here' : '↩ Back'}
       </button>
-      <input type="text" value="${esc(p.name)}" maxlength="12"
-        oninput="state.roster[${i}].name = this.value"
-        placeholder="Player ${i + 1}"
-        ${p.active ? '' : 'disabled'}>
       ${p.active ? `<div class="move-btns">
         <button class="move-btn" onclick="movePlayer(${i}, -1)">▲</button>
         <button class="move-btn" onclick="movePlayer(${i}, +1)">▼</button>
       </div>` : ''}
+      <input type="text" value="${esc(p.name)}" maxlength="12"
+        oninput="state.roster[${i}].name = this.value"
+        placeholder="Player ${i + 1}"
+        ${p.active ? '' : 'disabled'}>
     `;
     list.appendChild(row);
   });
