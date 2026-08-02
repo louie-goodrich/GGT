@@ -98,6 +98,7 @@
     }
     .player-row input {
       flex: 1;
+      min-width: 0;
       background: transparent;
       border: none;
       outline: none;
@@ -137,6 +138,19 @@
       color: rgba(129,140,248,0.75);
     }
     .not-here-btn.back-in:active { background: rgba(129,140,248,0.1); }
+    .remove-btn {
+      background: transparent;
+      border: 1px solid rgba(248,113,113,0.3);
+      color: rgba(248,113,113,0.65);
+      border-radius: 20px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 4px 9px;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .remove-btn:active { background: rgba(248,113,113,0.15); }
     .player-row.inactive { opacity: 0.38; }
     .player-row.inactive input { text-decoration: line-through; }
 
@@ -895,19 +909,20 @@ function renderSetup() {
   state.roster.forEach((p, i) => {
     const row = document.createElement('div');
     row.className = 'player-row' + (p.active ? '' : ' inactive');
+    const actionBtn = p.guest
+      ? `<button class="remove-btn" onclick="removePlayer(${i})">✕ Remove</button>`
+      : `<button class="not-here-btn${p.active ? '' : ' back-in'}" onclick="togglePlayerActive(${i})">${p.active ? '😔 Not here' : '↩ Back'}</button>`;
     row.innerHTML = `
       <div class="order-badge">${i + 1}</div>
-      <button class="not-here-btn${p.active ? '' : ' back-in'}" onclick="togglePlayerActive(${i})">
-        ${p.active ? '😔 Not here' : '↩ Back'}
-      </button>
-      ${p.active ? `<div class="move-btns">
-        <button class="move-btn" onclick="movePlayer(${i}, -1)">▲</button>
-        <button class="move-btn" onclick="movePlayer(${i}, +1)">▼</button>
-      </div>` : ''}
       <input type="text" value="${esc(p.name)}" maxlength="12"
         oninput="state.roster[${i}].name = this.value"
         placeholder="Player ${i + 1}"
         ${p.active ? '' : 'disabled'}>
+      ${actionBtn}
+      ${p.active ? `<div class="move-btns">
+        <button class="move-btn" onclick="movePlayer(${i}, -1)">▲</button>
+        <button class="move-btn" onclick="movePlayer(${i}, +1)">▼</button>
+      </div>` : ''}
     `;
     list.appendChild(row);
   });
@@ -955,7 +970,12 @@ function confirmAddPlayer() {
   const name = input.value.trim();
   if (!name) return;
   if (state.roster.filter(p => p.active).length >= 10) return;
-  state.roster.push({ name, active: true });
+  state.roster.push({ name, active: true, guest: true });
+  renderSetup();
+}
+
+function removePlayer(i) {
+  state.roster.splice(i, 1);
   renderSetup();
 }
 
