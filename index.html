@@ -119,6 +119,68 @@
     }
     .move-btn:active { background: var(--border); }
 
+    .not-here-btn {
+      background: transparent;
+      border: 1px solid rgba(248,113,113,0.3);
+      color: rgba(248,113,113,0.65);
+      border-radius: 20px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 4px 9px;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .not-here-btn:active { background: rgba(248,113,113,0.1); }
+    .not-here-btn.back-in {
+      border-color: rgba(129,140,248,0.35);
+      color: rgba(129,140,248,0.75);
+    }
+    .not-here-btn.back-in:active { background: rgba(129,140,248,0.1); }
+    .player-row.inactive { opacity: 0.38; }
+    .player-row.inactive input { text-decoration: line-through; }
+
+    .add-player-btn {
+      width: 100%;
+      background: transparent;
+      border: 1px dashed var(--border);
+      color: var(--primary);
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 10px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .add-player-btn:active { background: var(--surface); }
+    .add-player-row {
+      display: none;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .add-player-row.visible { display: flex; }
+    .add-player-input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--primary);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 8px 12px;
+      outline: none;
+    }
+    .add-player-confirm {
+      background: var(--primary-dark);
+      border: none;
+      border-radius: var(--radius-sm);
+      color: #fff;
+      font-size: 0.9rem;
+      font-weight: 700;
+      padding: 8px 14px;
+      cursor: pointer;
+    }
+
     .toggle-group {
       display: flex;
       background: var(--surface);
@@ -787,12 +849,13 @@ const SAVE_KEY = 'card-score-tracker-v2';
 
 let state = {
   phase: 'setup',
-  players: [
-    { name: 'Louie' },
-    { name: 'Robin' },
-    { name: 'Alec' },
-    { name: 'Ella' },
+  roster: [
+    { name: 'Louie', active: true },
+    { name: 'Robin', active: true },
+    { name: 'Alec', active: true },
+    { name: 'Ella', active: true },
   ],
+  players: [],
   highScoreWins: true,
   maxScore: null,
   maxRounds: null,
@@ -810,27 +873,70 @@ let currentInput = '';
 function renderSetup() {
   const list = document.getElementById('players-list');
   list.innerHTML = '';
-  state.players.forEach((p, i) => {
+  state.roster.forEach((p, i) => {
     const row = document.createElement('div');
-    row.className = 'player-row';
+    row.className = 'player-row' + (p.active ? '' : ' inactive');
     row.innerHTML = `
       <div class="order-badge">${i + 1}</div>
       <input type="text" value="${esc(p.name)}" maxlength="12"
-        oninput="state.players[${i}].name = this.value"
-        placeholder="Player ${i + 1}">
-      <div class="move-btns">
+        oninput="state.roster[${i}].name = this.value"
+        placeholder="Player ${i + 1}"
+        ${p.active ? '' : 'disabled'}>
+      ${p.active ? `<div class="move-btns">
         <button class="move-btn" onclick="movePlayer(${i}, -1)">▲</button>
         <button class="move-btn" onclick="movePlayer(${i}, +1)">▼</button>
-      </div>
+      </div>` : ''}
+      <button class="not-here-btn${p.active ? '' : ' back-in'}" onclick="togglePlayerActive(${i})">
+        ${p.active ? '😔 Not here' : '↩ Back'}
+      </button>
     `;
     list.appendChild(row);
   });
+
+  const activeCount = state.roster.filter(p => p.active).length;
+  if (activeCount < 10) {
+    const addBtn = document.createElement('button');
+    addBtn.className = 'add-player-btn';
+    addBtn.textContent = '+ Add Player';
+    addBtn.onclick = showAddPlayer;
+    list.appendChild(addBtn);
+
+    const addRow = document.createElement('div');
+    addRow.className = 'add-player-row';
+    addRow.id = 'add-player-row';
+    addRow.innerHTML = `
+      <input class="add-player-input" id="add-player-input" type="text" maxlength="12"
+        placeholder="Name…" onkeydown="if(event.key==='Enter')confirmAddPlayer()">
+      <button class="add-player-confirm" onclick="confirmAddPlayer()">Add</button>
+    `;
+    list.appendChild(addRow);
+  }
 }
 
 function movePlayer(i, dir) {
   const j = i + dir;
-  if (j < 0 || j >= state.players.length) return;
-  [state.players[i], state.players[j]] = [state.players[j], state.players[i]];
+  if (j < 0 || j >= state.roster.length) return;
+  [state.roster[i], state.roster[j]] = [state.roster[j], state.roster[i]];
+  renderSetup();
+}
+
+function togglePlayerActive(i) {
+  state.roster[i].active = !state.roster[i].active;
+  renderSetup();
+}
+
+function showAddPlayer() {
+  const row = document.getElementById('add-player-row');
+  if (row) { row.classList.add('visible'); document.getElementById('add-player-input').focus(); }
+}
+
+function confirmAddPlayer() {
+  const input = document.getElementById('add-player-input');
+  if (!input) return;
+  const name = input.value.trim();
+  if (!name) return;
+  if (state.roster.filter(p => p.active).length >= 10) return;
+  state.roster.push({ name, active: true });
   renderSetup();
 }
 
@@ -841,9 +947,10 @@ function setWinCondition(val, el) {
 }
 
 function startGame() {
-  for (let i = 0; i < state.players.length; i++) {
-    if (!state.players[i].name.trim()) state.players[i].name = `Player ${i + 1}`;
-  }
+  const active = state.roster.filter(p => p.active);
+  if (active.length < 2) return;
+  active.forEach((p, i) => { if (!p.name.trim()) p.name = `Player ${i + 1}`; });
+  state.players = active.map(p => ({ name: p.name }));
   const ms = parseInt(document.getElementById('max-score-input').value);
   const mr = parseInt(document.getElementById('max-rounds-input').value);
   state.maxScore = ms > 0 ? ms : null;
@@ -1185,7 +1292,12 @@ function save() {
 function load() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
-    if (s && s.players && s.players.length) { state = s; return true; }
+    if (s && (s.roster || s.players)) {
+      if (!s.roster && s.players) {
+        s.roster = s.players.map(p => ({ name: p.name, active: true }));
+      }
+      if (s.roster && s.roster.length) { state = s; return true; }
+    }
   } catch (_) {}
   return false;
 }
