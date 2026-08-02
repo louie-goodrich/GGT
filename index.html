@@ -549,6 +549,16 @@
     .rank-score { font-size: 1.1rem; font-weight: 800; font-variant-numeric: tabular-nums; }
     .rank-rounds { font-size: 0.75rem; color: var(--muted); }
 
+    .tie-badge { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .tie-names {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--gold);
+      text-align: center;
+      line-height: 1.25;
+    }
+    .tie-tagline { font-size: 0.95rem; color: var(--text); font-style: italic; }
+
     .summary-btns { display: flex; flex-direction: column; gap: 10px; width: 100%; }
     .play-again-btn {
       width: 100%; padding: 15px;
@@ -887,6 +897,9 @@ function renderSetup() {
     row.className = 'player-row' + (p.active ? '' : ' inactive');
     row.innerHTML = `
       <div class="order-badge">${i + 1}</div>
+      <button class="not-here-btn${p.active ? '' : ' back-in'}" onclick="togglePlayerActive(${i})">
+        ${p.active ? '😔 Not here' : '↩ Back'}
+      </button>
       <input type="text" value="${esc(p.name)}" maxlength="12"
         oninput="state.roster[${i}].name = this.value"
         placeholder="Player ${i + 1}"
@@ -895,9 +908,6 @@ function renderSetup() {
         <button class="move-btn" onclick="movePlayer(${i}, -1)">▲</button>
         <button class="move-btn" onclick="movePlayer(${i}, +1)">▼</button>
       </div>` : ''}
-      <button class="not-here-btn${p.active ? '' : ' back-in'}" onclick="togglePlayerActive(${i})">
-        ${p.active ? '😔 Not here' : '↩ Back'}
-      </button>
     `;
     list.appendChild(row);
   });
@@ -1226,37 +1236,73 @@ const WINNER_MSGS = [
   "Victory lap time! 🏆",
 ];
 
+const NECKTIE_SVG = `<svg viewBox="0 0 100 220" xmlns="http://www.w3.org/2000/svg" width="70" height="154" style="filter:drop-shadow(0 4px 16px rgba(251,191,36,0.45))">
+  <path d="M28 6 L72 6 L80 24 L50 36 L20 24 Z" fill="#d97706"/>
+  <path d="M34 8 L66 8 L72 22 L50 30 L28 22 Z" fill="#fbbf24"/>
+  <path d="M44 34 L56 34 L53 44 L47 44 Z" fill="#b45309"/>
+  <path d="M20 44 L80 44 L90 135 L50 216 L10 135 Z" fill="#fbbf24"/>
+  <path d="M20 44 L47 44 L50 216 L10 135 Z" fill="#000" opacity="0.12"/>
+  <path d="M28 86 L72 86 L74 99 L26 99 Z" fill="#fde68a" opacity="0.55"/>
+  <path d="M24 120 L76 120 L79 134 L21 134 Z" fill="#fde68a" opacity="0.4"/>
+</svg>`;
+
 function renderSummary() {
   const totals = computeTotals();
   const ranked = state.players
     .map((p, i) => ({ name: p.name, total: totals[i] ?? 0, rounds: state.rounds.filter(r => r[i] !== null).length }))
     .sort((a, b) => state.highScoreWins ? b.total - a.total : a.total - b.total);
 
-  const winner = ranked[0];
-  const tagline = WINNER_MSGS[Math.floor(Math.random() * WINNER_MSGS.length)];
-  document.getElementById('winner-card').innerHTML = `
-    <span class="winner-trophy">🏆</span>
-    <div class="winner-title">Winner</div>
-    <div class="winner-name">${esc(winner.name)}</div>
-    <div class="winner-score">${winner.total} points · ${winner.rounds} round${winner.rounds !== 1 ? 's' : ''}</div>
-    <div class="winner-tagline">${tagline}</div>
-  `;
+  const topScore = ranked[0].total;
+  const tiedPlayers = ranked.filter(p => p.total === topScore);
+  const isTie = tiedPlayers.length > 1;
+
+  if (isTie) {
+    document.getElementById('winner-card').innerHTML = `
+      <div class="tie-badge">
+        ${NECKTIE_SVG}
+        <div class="winner-title">It's a Tie!</div>
+        <div class="tie-names">${tiedPlayers.map(p => esc(p.name)).join(' & ')}</div>
+        <div class="tie-tagline">A classic neck-and-neck finish 👔</div>
+      </div>
+    `;
+  } else {
+    const winner = ranked[0];
+    const tagline = WINNER_MSGS[Math.floor(Math.random() * WINNER_MSGS.length)];
+    document.getElementById('winner-card').innerHTML = `
+      <span class="winner-trophy">🏆</span>
+      <div class="winner-title">Winner</div>
+      <div class="winner-name">${esc(winner.name)}</div>
+      <div class="winner-score">${winner.total} points · ${winner.rounds} round${winner.rounds !== 1 ? 's' : ''}</div>
+      <div class="winner-tagline">${tagline}</div>
+    `;
+  }
 
   const rankClasses = ['rank-1','rank-2','rank-3','rank-4'];
   const lastPlaceEmojis = ['🤦','💀','🫠','🪦','😭','🤯','😵‍💫','🙈','🫣','😤'];
-  const rankEmojis = ['🥇','🥈','🥉', lastPlaceEmojis[Math.floor(Math.random() * lastPlaceEmojis.length)]];
+  const lastEmoji = lastPlaceEmojis[Math.floor(Math.random() * lastPlaceEmojis.length)];
+
   document.getElementById('final-scores').innerHTML =
     '<h3>Final Standings</h3>' +
-    ranked.map((p, r) => `
-      <div class="score-rank-row">
-        <div class="rank-num ${rankClasses[r] || 'rank-4'}">${rankEmojis[r] || r+1}</div>
-        <div class="rank-name">${esc(p.name)}</div>
-        <div>
-          <div class="rank-score">${p.total}</div>
-          <div class="rank-rounds">${p.rounds} round${p.rounds !== 1 ? 's' : ''}</div>
+    ranked.map((p, r) => {
+      const actualRank = ranked.findIndex(q => q.total === p.total);
+      const isActualLast = r === ranked.length - 1 && actualRank > 2;
+      let emoji;
+      if (actualRank === 0) emoji = '🥇';
+      else if (actualRank === 1) emoji = '🥈';
+      else if (actualRank === 2) emoji = '🥉';
+      else if (isActualLast) emoji = lastEmoji;
+      else emoji = String(actualRank + 1);
+      return `
+        <div class="score-rank-row">
+          <div class="rank-num ${rankClasses[actualRank] || 'rank-4'}">${emoji}</div>
+          <div class="rank-name">${esc(p.name)}</div>
+          <div>
+            <div class="rank-score">${p.total}</div>
+            <div class="rank-rounds">${p.rounds} round${p.rounds !== 1 ? 's' : ''}</div>
+          </div>
         </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
 }
 
 function spawnConfetti() {
