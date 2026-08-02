@@ -1,0 +1,10 @@
+{
+  "name": "Goodrich Game Time",
+  "short_name": "GGT",
+  "description": "Goodrich family card game score tracker",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f0e1a",
+  "theme_color": "#1e1b4b"
+}

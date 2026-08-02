@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#1e1b4b">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.png">
+  <title>Goodrich Game Time</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0f0e1a;
+      --surface: #1e1b4b;
+      --surface2: #2d2a5e;
+      --border: #3d3a7a;
+      --primary: #818cf8;
+      --primary-dark: #6366f1;
+      --gold: #fbbf24;
+      --gold-bg: rgba(251,191,36,0.12);
+      --gold-border: rgba(251,191,36,0.5);
+      --red: #f87171;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --col-label: 40px;
+      --players: 4;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior: none;
+    }
+
+    body { display: flex; flex-direction: column; }
+
+    /* ─── SCREENS ─── */
+    .screen { display: none; flex-direction: column; flex: 1; min-height: 0; }
+    .screen.active { display: flex; }
+
+    /* ─────────────────────────────────────────
+       SETUP SCREEN
+    ───────────────────────────────────────── */
+    #setup {
+      padding: 20px 16px 32px;
+      overflow-y: auto;
+      gap: 20px;
+    }
+
+    .setup-header { text-align: center; padding: 8px 0 4px; }
+    .setup-header h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--primary), var(--gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .setup-header p { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--primary);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .players-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .player-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border-radius: var(--radius-sm);
+      padding: 4px 8px 4px 4px;
+      border: 1px solid var(--border);
+    }
+    .order-badge {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--surface2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; font-weight: 700; color: var(--primary);
+      flex-shrink: 0;
+    }
+    .player-row input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 8px 4px;
+    }
+    .move-btns { display: flex; flex-direction: column; gap: 2px; }
+    .move-btn {
+      background: var(--surface2);
+      border: none;
+      color: var(--muted);
+      width: 26px; height: 22px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .move-btn:active { background: var(--border); }
+
+    .toggle-group {
+      display: flex;
+      background: var(--surface);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .toggle-opt {
+      flex: 1;
+      padding: 10px 8px;
+      text-align: center;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .toggle-opt.selected { background: var(--primary-dark); color: #fff; }
+
+    .optional-row {
+      display: flex;
+      align-items: center;
+      background: var(--surface);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      padding: 12px 14px;
+      gap: 12px;
+    }
+    .optional-row label { flex: 1; font-size: 0.9rem; color: var(--text); }
+    .optional-row .hint { font-size: 0.75rem; color: var(--muted); display: block; }
+    .optional-input {
+      width: 80px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 700;
+      text-align: center;
+      padding: 6px 8px;
+      outline: none;
+    }
+    .optional-input:focus { border-color: var(--primary); }
+    .optional-input::placeholder { color: var(--border); font-weight: 400; }
+
+    .start-btn {
+      margin-top: 4px;
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, var(--primary-dark), #4f46e5);
+      border: none;
+      border-radius: var(--radius);
+      color: #fff;
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(99,102,241,0.4);
+    }
+    .start-btn:active { transform: scale(0.98); }
+
+    /* ─────────────────────────────────────────
+       GAME SCREEN  (CSS grid — no <table>)
+    ───────────────────────────────────────── */
+    #game { overflow: hidden; }
+
+    .game-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      gap: 8px;
+    }
+    .round-badge {
+      background: var(--primary-dark);
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 5px 12px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+    .win-condition {
+      font-size: 0.75rem;
+      color: var(--muted);
+      flex: 1;
+      text-align: center;
+    }
+    .end-btn {
+      background: rgba(248,113,113,0.15);
+      border: 1px solid rgba(248,113,113,0.4);
+      color: var(--red);
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .end-btn:active { background: rgba(248,113,113,0.3); }
+
+    /* Column grid: fixed label col + equal player cols */
+    .score-grid {
+      display: grid;
+      grid-template-columns: var(--col-label) repeat(var(--players), 1fr);
+    }
+
+    /* ── Names header band ── */
+    .names-band {
+      flex-shrink: 0;
+      background: var(--surface2);
+      border-bottom: 2px solid var(--primary);
+    }
+    .names-band .grid-cell { padding: 10px 4px; min-height: 46px; }
+
+    .cell-name {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      transition: color 0.2s, background 0.2s;
+    }
+    .cell-name.winner { color: var(--gold); background: rgba(251,191,36,0.22); }
+
+    /* ── Totals band ── */
+    .totals-band {
+      flex-shrink: 0;
+      background: var(--surface);
+      border-bottom: 2px solid var(--border);
+    }
+    .totals-band .grid-cell { min-height: 42px; padding: 8px 4px; }
+
+    .cell-total-label {
+      font-size: 0.6rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--primary);
+    }
+    .cell-total {
+      font-size: 1rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      transition: color 0.2s, background 0.2s;
+    }
+    .cell-total.winner { color: var(--gold); background: rgba(251,191,36,0.2); }
+
+    /* ── Rounds scroll area ── */
+    .rounds-scroll {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .round-row { border-bottom: 1px solid rgba(61,58,122,0.6); }
+    .round-row:last-of-type { border-bottom: none; }
+
+    .cell-round-num {
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--muted);
+      background: rgba(30,27,75,0.6);
+    }
+
+    /* Shared grid cell */
+    .grid-cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-right: 1px solid rgba(61,58,122,0.5);
+      text-align: center;
+    }
+    .grid-cell:last-child { border-right: none; }
+
+    .score-cell {
+      font-size: 1rem;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      min-height: 48px;
+      cursor: pointer;
+      transition: background 0.1s;
+      user-select: none;
+    }
+    .score-cell.empty { color: rgba(147,139,196,0.4); font-size: 1.1rem; }
+    .score-cell:active { background: var(--surface2) !important; }
+    .score-cell.winner { background: rgba(251,191,36,0.07); }
+
+    .add-round-wrap {
+      padding: 12px;
+    }
+    .add-round-btn {
+      width: 100%;
+      background: transparent;
+      border: 1px dashed rgba(61,58,122,0.8);
+      color: var(--muted);
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 10px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+    }
+    .add-round-btn:active { background: var(--surface); }
+
+    .game-footer {
+      padding: 10px 14px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .end-game-big-btn {
+      width: 100%;
+      padding: 14px;
+      background: rgba(248,113,113,0.1);
+      border: 1.5px solid rgba(248,113,113,0.4);
+      border-radius: var(--radius);
+      color: var(--red);
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .end-game-big-btn:active { background: rgba(248,113,113,0.22); }
+
+    /* ─────────────────────────────────────────
+       SCORE INPUT MODAL
+    ───────────────────────────────────────── */
+    #score-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      flex-direction: column;
+    }
+    #score-modal.open { display: flex; }
+
+    .modal-backdrop { flex: 1; background: rgba(0,0,0,0.6); }
+
+    .modal-sheet {
+      background: var(--surface);
+      border-radius: 20px 20px 0 0;
+      padding: 16px 16px 28px;
+      border-top: 1px solid var(--border);
+    }
+    .modal-title {
+      text-align: center;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+    .score-display {
+      background: var(--bg);
+      border: 2px solid var(--primary);
+      border-radius: var(--radius);
+      text-align: center;
+      font-size: 2.4rem;
+      font-weight: 800;
+      color: var(--text);
+      padding: 10px 16px;
+      margin-bottom: 10px;
+      min-height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-variant-numeric: tabular-nums;
+    }
+    .score-display.has-value { color: var(--primary); }
+
+    .numpad {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+    }
+    .numpad-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 1.25rem;
+      font-weight: 600;
+      height: 54px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      user-select: none;
+    }
+    .numpad-btn:active { background: var(--border); }
+    .numpad-btn.zero { grid-column: span 2; }
+    .numpad-btn.action { background: var(--surface); color: var(--muted); font-size: 0.95rem; }
+    .numpad-btn.submit { background: var(--primary-dark); color: #fff; border-color: var(--primary-dark); font-size: 0.95rem; }
+    .numpad-btn.submit:active { background: #4f46e5; }
+    .numpad-btn.negative { color: var(--primary); font-size: 0.95rem; }
+
+    /* ─────────────────────────────────────────
+       SUMMARY SCREEN
+    ───────────────────────────────────────── */
+    #summary {
+      overflow-y: auto;
+      padding: 24px 16px 40px;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .confetti-area {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 0; overflow: hidden;
+    }
+    .confetti-piece {
+      position: absolute;
+      width: 10px; height: 14px;
+      top: -20px;
+      border-radius: 2px;
+      animation: fall linear forwards;
+    }
+    @keyframes fall { to { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
+
+    .summary-content {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 480px;
+      display: flex; flex-direction: column; gap: 20px; align-items: center;
+    }
+
+    .winner-card {
+      background: linear-gradient(135deg, #2d2a5e, #1e1b4b);
+      border: 2px solid var(--gold-border);
+      border-radius: 20px;
+      padding: 28px 20px;
+      text-align: center;
+      width: 100%;
+      box-shadow: 0 8px 32px rgba(251,191,36,0.2);
+    }
+    .winner-trophy { font-size: 3.5rem; margin-bottom: 8px; display: block; }
+    .winner-title { font-size: 0.75rem; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 0.1em; }
+    .winner-name { font-size: 2.2rem; font-weight: 800; color: var(--gold); margin: 4px 0 8px; }
+    .winner-score { font-size: 1rem; color: var(--muted); }
+    .winner-tagline { font-size: 0.95rem; color: var(--text); margin-top: 12px; font-style: italic; }
+
+    .final-scores { width: 100%; }
+    .final-scores h3 { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--primary); margin-bottom: 10px; }
+    .score-rank-row {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 8px;
+    }
+    .rank-num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; flex-shrink: 0; }
+    .rank-1 { background: var(--gold); color: #000; }
+    .rank-2 { background: #94a3b8; color: #000; }
+    .rank-3 { background: #c97c3b; color: #fff; }
+    .rank-4 { background: var(--surface2); color: var(--muted); }
+    .rank-name { flex: 1; font-weight: 700; font-size: 1rem; }
+    .rank-score { font-size: 1.1rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .rank-rounds { font-size: 0.75rem; color: var(--muted); }
+
+    .summary-btns { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+    .play-again-btn {
+      width: 100%; padding: 15px;
+      background: linear-gradient(135deg, var(--primary-dark), #4f46e5);
+      border: none; border-radius: var(--radius);
+      color: #fff; font-size: 1.05rem; font-weight: 700; cursor: pointer;
+      box-shadow: 0 4px 20px rgba(99,102,241,0.4);
+    }
+    .play-again-btn:active { transform: scale(0.98); }
+    .new-game-btn {
+      width: 100%; padding: 14px;
+      background: transparent; border: 1px solid var(--border); border-radius: var(--radius);
+      color: var(--muted); font-size: 0.95rem; font-weight: 600; cursor: pointer;
+    }
+    .new-game-btn:active { background: var(--surface); }
+
+    /* ─────────────────────────────────────────
+       CONFIRM DIALOG
+    ───────────────────────────────────────── */
+    #confirm-dialog {
+      display: none;
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.7);
+      align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    #confirm-dialog.open { display: flex; }
+    .confirm-box {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+      padding: 28px 24px; width: 100%; max-width: 340px; text-align: center;
+    }
+    .confirm-box h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
+    .confirm-box p { color: var(--muted); font-size: 0.9rem; margin-bottom: 20px; }
+    .confirm-btns { display: flex; gap: 10px; }
+    .confirm-yes { flex: 1; padding: 12px; background: var(--red); border: none; border-radius: var(--radius-sm); color: #fff; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+    .confirm-no { flex: 1; padding: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+
+    /* ─────────────────────────────────────────
+       PIN SCREEN
+    ───────────────────────────────────────── */
+    #pin-screen {
+      background: #000;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+    }
+
+    .pin-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 320px;
+      padding: 0 24px;
+      gap: 28px;
+    }
+
+    .pin-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #555;
+    }
+
+    .pin-display {
+      font-size: 2.4rem;
+      font-weight: 300;
+      letter-spacing: 0.18em;
+      color: #fff;
+      font-variant-numeric: tabular-nums;
+      font-family: 'Courier New', monospace;
+      min-height: 52px;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s;
+    }
+    .pin-display.error { color: #f87171; animation: pinShake 0.4s ease; }
+    .pin-display.success { color: #34d399; }
+    @keyframes pinShake {
+      0%,100% { transform: translateX(0); }
+      20%      { transform: translateX(-10px); }
+      40%      { transform: translateX(10px); }
+      60%      { transform: translateX(-8px); }
+      80%      { transform: translateX(8px); }
+    }
+
+    .pin-wrong-msg {
+      font-size: 0.8rem;
+      color: #f87171;
+      height: 18px;
+      text-align: center;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .pin-wrong-msg.visible { opacity: 1; }
+
+    .pin-numpad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      width: 100%;
+    }
+
+    .pin-btn {
+      background: transparent;
+      border: 1px solid #222;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 1.4rem;
+      font-weight: 300;
+      width: 72px;
+      height: 72px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+      transition: background 0.1s, border-color 0.1s;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .pin-btn:active { background: #1a1a1a; border-color: #444; }
+    .pin-btn .pin-sub {
+      font-size: 0.45rem;
+      letter-spacing: 0.15em;
+      color: #555;
+      margin-top: 1px;
+    }
+    .pin-btn.del { font-size: 1rem; color: #888; border-color: transparent; }
+    .pin-btn.del:active { background: #111; }
+    .pin-btn.empty { border-color: transparent; pointer-events: none; }
+
+    /* ─────────────────────────────────────────
+       MAX SCORE ALERT
+    ───────────────────────────────────────── */
+    #max-alert {
+      display: none;
+      position: fixed; top: 60px; left: 50%; transform: translateX(-50%);
+      z-index: 150;
+      background: rgba(248,113,113,0.15); border: 1px solid rgba(248,113,113,0.5);
+      border-radius: 30px; padding: 8px 18px;
+      font-size: 0.85rem; font-weight: 700; color: var(--red);
+      white-space: nowrap;
+      animation: slideDown 0.3s ease;
+    }
+    @keyframes slideDown { from { transform: translateX(-50%) translateY(-8px); opacity: 0; } }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════ PIN SCREEN ═══════════════════════ -->
+<div id="pin-screen" class="screen active">
+  <div class="pin-wrap">
+    <div class="pin-label">Phone Number</div>
+    <div class="pin-display" id="pin-display">···–····</div>
+    <div class="pin-wrong-msg" id="pin-wrong-msg">Wrong number 📵</div>
+    <div class="pin-numpad">
+      <button class="pin-btn" onclick="pinPress('1')">1<span class="pin-sub">&nbsp;</span></button>
+      <button class="pin-btn" onclick="pinPress('2')">2<span class="pin-sub">ABC</span></button>
+      <button class="pin-btn" onclick="pinPress('3')">3<span class="pin-sub">DEF</span></button>
+      <button class="pin-btn" onclick="pinPress('4')">4<span class="pin-sub">GHI</span></button>
+      <button class="pin-btn" onclick="pinPress('5')">5<span class="pin-sub">JKL</span></button>
+      <button class="pin-btn" onclick="pinPress('6')">6<span class="pin-sub">MNO</span></button>
+      <button class="pin-btn" onclick="pinPress('7')">7<span class="pin-sub">PQRS</span></button>
+      <button class="pin-btn" onclick="pinPress('8')">8<span class="pin-sub">TUV</span></button>
+      <button class="pin-btn" onclick="pinPress('9')">9<span class="pin-sub">WXYZ</span></button>
+      <button class="pin-btn empty"></button>
+      <button class="pin-btn" onclick="pinPress('0')">0</button>
+      <button class="pin-btn del" onclick="pinDel()">⌫</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ SETUP SCREEN ═══════════════════════ -->
+<div id="setup" class="screen active">
+  <div class="setup-header">
+    <h1>🃏 Goodrich Game Time</h1>
+    <p>Set up your game before you play</p>
+  </div>
+
+  <div>
+    <div class="section-label">Players — tap ▲▼ to reorder</div>
+    <div class="players-list" id="players-list"></div>
+  </div>
+
+  <div>
+    <div class="section-label">Winning Condition</div>
+    <div class="toggle-group">
+      <div class="toggle-opt selected" data-val="high" onclick="setWinCondition('high', this)">🏆 High Score Wins</div>
+      <div class="toggle-opt" data-val="low" onclick="setWinCondition('low', this)">🎯 Low Score Wins</div>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-label">Optional Settings</div>
+    <div class="optional-row">
+      <label>Max Score <span class="hint">Game ends when someone hits this</span></label>
+      <input class="optional-input" id="max-score-input" type="number" inputmode="numeric" placeholder="—" min="1">
+    </div>
+    <div style="height:8px"></div>
+    <div class="optional-row">
+      <label>Number of Rounds <span class="hint">Leave blank for open-ended</span></label>
+      <input class="optional-input" id="max-rounds-input" type="number" inputmode="numeric" placeholder="—" min="1">
+    </div>
+  </div>
+
+  <button class="start-btn" onclick="startGame()">Start Game →</button>
+</div>
+
+<!-- ═══════════════════════ GAME SCREEN ═══════════════════════ -->
+<div id="game" class="screen">
+
+  <div class="game-topbar">
+    <span class="round-badge" id="round-badge">Round 1</span>
+    <span class="win-condition" id="win-condition-label"></span>
+    <button class="end-btn" onclick="confirmEndGame()">End ✕</button>
+  </div>
+
+  <!-- Fixed: player names -->
+  <div class="names-band score-grid" id="names-band">
+    <div class="grid-cell"></div>
+    <!-- player name cells injected by JS -->
+  </div>
+
+  <!-- Fixed: totals row -->
+  <div class="totals-band score-grid" id="totals-band">
+    <div class="grid-cell cell-total-label">Total</div>
+    <!-- total value cells injected by JS -->
+  </div>
+
+  <!-- Scrollable: round rows -->
+  <div class="rounds-scroll" id="rounds-scroll">
+    <!-- round rows injected by JS -->
+  </div>
+
+  <div class="game-footer">
+    <button class="end-game-big-btn" onclick="confirmEndGame()">🏁 End Game &amp; See Results</button>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════ SUMMARY SCREEN ═══════════════════════ -->
+<div id="summary" class="screen">
+  <div class="confetti-area" id="confetti-area"></div>
+  <div class="summary-content">
+    <div class="winner-card" id="winner-card"></div>
+    <div class="final-scores" id="final-scores"></div>
+    <div class="summary-btns">
+      <button class="play-again-btn" onclick="playAgain()">🔄 Play Again with Same Setup</button>
+      <button class="new-game-btn" onclick="newGame()">⚙️ Change Rules / New Game</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ SCORE INPUT MODAL ═══════════════════════ -->
+<div id="score-modal">
+  <div class="modal-backdrop" onclick="closeModal()"></div>
+  <div class="modal-sheet">
+    <div class="modal-title" id="modal-title">Enter Score</div>
+    <div class="score-display" id="score-display">0</div>
+    <div class="numpad">
+      <button class="numpad-btn" onclick="numpadPress('7')">7</button>
+      <button class="numpad-btn" onclick="numpadPress('8')">8</button>
+      <button class="numpad-btn" onclick="numpadPress('9')">9</button>
+      <button class="numpad-btn action" onclick="numpadPress('⌫')">⌫</button>
+
+      <button class="numpad-btn" onclick="numpadPress('4')">4</button>
+      <button class="numpad-btn" onclick="numpadPress('5')">5</button>
+      <button class="numpad-btn" onclick="numpadPress('6')">6</button>
+      <button class="numpad-btn action negative" onclick="numpadPress('+/-')">+/−</button>
+
+      <button class="numpad-btn" onclick="numpadPress('1')">1</button>
+      <button class="numpad-btn" onclick="numpadPress('2')">2</button>
+      <button class="numpad-btn" onclick="numpadPress('3')">3</button>
+      <button class="numpad-btn action" onclick="numpadPress('CLR')">CLR</button>
+
+      <button class="numpad-btn zero" onclick="numpadPress('0')">0</button>
+      <button class="numpad-btn" onclick="numpadPress('.')">.</button>
+      <button class="numpad-btn submit" onclick="submitScore()">OK ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ CONFIRM DIALOG ═══════════════════════ -->
+<div id="confirm-dialog">
+  <div class="confirm-box">
+    <h3>End the game?</h3>
+    <p>This will show the final results.</p>
+    <div class="confirm-btns">
+      <button class="confirm-no" onclick="closeConfirm()">Keep Playing</button>
+      <button class="confirm-yes" onclick="endGame()">End Game</button>
+    </div>
+  </div>
+</div>
+
+<div id="max-alert"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+const SAVE_KEY = 'card-score-tracker-v2';
+
+let state = {
+  phase: 'setup',
+  players: [
+    { name: 'Louie' },
+    { name: 'Robin' },
+    { name: 'Alec' },
+    { name: 'Ella' },
+  ],
+  highScoreWins: true,
+  maxScore: null,
+  maxRounds: null,
+  rounds: [],
+  activeRound: 0,
+};
+
+let modalContext = null;
+let currentInput = '';
+
+// ═══════════════════════════════════════════
+// SETUP
+// ═══════════════════════════════════════════
+
+function renderSetup() {
+  const list = document.getElementById('players-list');
+  list.innerHTML = '';
+  state.players.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.className = 'player-row';
+    row.innerHTML = `
+      <div class="order-badge">${i + 1}</div>
+      <input type="text" value="${esc(p.name)}" maxlength="12"
+        oninput="state.players[${i}].name = this.value"
+        placeholder="Player ${i + 1}">
+      <div class="move-btns">
+        <button class="move-btn" onclick="movePlayer(${i}, -1)">▲</button>
+        <button class="move-btn" onclick="movePlayer(${i}, +1)">▼</button>
+      </div>
+    `;
+    list.appendChild(row);
+  });
+}
+
+function movePlayer(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= state.players.length) return;
+  [state.players[i], state.players[j]] = [state.players[j], state.players[i]];
+  renderSetup();
+}
+
+function setWinCondition(val, el) {
+  state.highScoreWins = val === 'high';
+  document.querySelectorAll('.toggle-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function startGame() {
+  for (let i = 0; i < state.players.length; i++) {
+    if (!state.players[i].name.trim()) state.players[i].name = `Player ${i + 1}`;
+  }
+  const ms = parseInt(document.getElementById('max-score-input').value);
+  const mr = parseInt(document.getElementById('max-rounds-input').value);
+  state.maxScore = ms > 0 ? ms : null;
+  state.maxRounds = mr > 0 ? mr : null;
+  state.rounds = [new Array(state.players.length).fill(null)];
+  state.activeRound = 0;
+  state.phase = 'game';
+  renderGame();
+  showScreen('game');
+  save();
+}
+
+// ═══════════════════════════════════════════
+// GAME — CSS GRID LAYOUT
+// ═══════════════════════════════════════════
+
+function renderGame() {
+  const n = state.players.length;
+
+  // Set CSS variable so all .score-grid elements get the right columns
+  document.getElementById('game').style.setProperty('--players', n);
+
+  // Topbar
+  document.getElementById('round-badge').textContent = `Round ${state.activeRound + 1}`;
+  document.getElementById('win-condition-label').textContent =
+    state.highScoreWins ? '🏆 High score wins' : '🎯 Low score wins';
+
+  // ── Names band ──
+  const namesBand = document.getElementById('names-band');
+  // Keep the first placeholder cell, replace the rest
+  namesBand.innerHTML = '<div class="grid-cell"></div>';
+  state.players.forEach((p, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'grid-cell cell-name';
+    cell.id = `col-name-${i}`;
+    cell.textContent = p.name;
+    namesBand.appendChild(cell);
+  });
+
+  // ── Totals band ──
+  const totals = computeTotals();
+  const totalsBand = document.getElementById('totals-band');
+  totalsBand.innerHTML = '<div class="grid-cell cell-total-label">Total</div>';
+  state.players.forEach((_, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'grid-cell cell-total';
+    cell.id = `col-total-${i}`;
+    cell.textContent = totals[i] !== null ? totals[i] : '—';
+    totalsBand.appendChild(cell);
+  });
+
+  // ── Rounds ──
+  const scroll = document.getElementById('rounds-scroll');
+  scroll.innerHTML = '';
+
+  state.rounds.forEach((roundScores, r) => {
+    const row = document.createElement('div');
+    row.className = 'round-row score-grid';
+    row.id = `round-row-${r}`;
+
+    const label = document.createElement('div');
+    label.className = 'grid-cell cell-round-num';
+    label.textContent = r + 1;
+    row.appendChild(label);
+
+    roundScores.forEach((score, p) => {
+      const cell = document.createElement('div');
+      cell.className = 'grid-cell score-cell' + (score === null ? ' empty' : '');
+      cell.id = `cell-${r}-${p}`;
+      cell.textContent = score !== null ? score : '·';
+      cell.onclick = () => openModal(r, p);
+      row.appendChild(cell);
+    });
+
+    scroll.appendChild(row);
+  });
+
+  // Add round button
+  if (!state.maxRounds || state.rounds.length < state.maxRounds) {
+    const wrap = document.createElement('div');
+    wrap.className = 'add-round-wrap';
+    const btn = document.createElement('button');
+    btn.className = 'add-round-btn';
+    btn.textContent = '+ Add Round';
+    btn.onclick = addRound;
+    wrap.appendChild(btn);
+    scroll.appendChild(wrap);
+  }
+
+  updateHighlights();
+}
+
+function computeTotals() {
+  const n = state.players.length;
+  const totals = new Array(n).fill(null);
+  state.rounds.forEach(round => {
+    round.forEach((score, p) => {
+      if (score !== null) {
+        totals[p] = (totals[p] ?? 0) + score;
+      }
+    });
+  });
+  return totals;
+}
+
+function updateHighlights() {
+  const totals = computeTotals();
+  const valid = totals.filter(t => t !== null);
+  if (!valid.length) return;
+
+  const best = state.highScoreWins ? Math.max(...valid) : Math.min(...valid);
+
+  state.players.forEach((p, i) => {
+    const isWinner = totals[i] === best;
+
+    const nameCell = document.getElementById(`col-name-${i}`);
+    const totalCell = document.getElementById(`col-total-${i}`);
+
+    if (nameCell) {
+      nameCell.classList.toggle('winner', isWinner);
+      nameCell.textContent = isWinner ? `${p.name} 👑` : p.name;
+    }
+    if (totalCell) {
+      totalCell.classList.toggle('winner', isWinner);
+    }
+
+    state.rounds.forEach((_, r) => {
+      const cell = document.getElementById(`cell-${r}-${i}`);
+      if (cell) cell.classList.toggle('winner', isWinner);
+    });
+  });
+}
+
+function addRound() {
+  state.rounds.push(new Array(state.players.length).fill(null));
+  state.activeRound = state.rounds.length - 1;
+  renderGame();
+  document.getElementById('rounds-scroll').scrollTop = 999999;
+  save();
+}
+
+// ═══════════════════════════════════════════
+// SCORE MODAL
+// ═══════════════════════════════════════════
+
+function openModal(roundIndex, playerIndex) {
+  modalContext = { roundIndex, playerIndex };
+  const existing = state.rounds[roundIndex][playerIndex];
+  currentInput = existing !== null ? String(existing) : '';
+  document.getElementById('modal-title').textContent =
+    `Round ${roundIndex + 1} — ${state.players[playerIndex].name}`;
+  updateScoreDisplay();
+  document.getElementById('score-modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('score-modal').classList.remove('open');
+  modalContext = null;
+  currentInput = '';
+}
+
+function updateScoreDisplay() {
+  const el = document.getElementById('score-display');
+  el.textContent = currentInput === '' ? '0' : currentInput;
+  el.className = 'score-display' + (currentInput !== '' ? ' has-value' : '');
+}
+
+function numpadPress(key) {
+  if (key === 'CLR') { currentInput = ''; }
+  else if (key === '⌫') { currentInput = currentInput.slice(0, -1); }
+  else if (key === '+/-') {
+    if (currentInput.startsWith('-')) currentInput = currentInput.slice(1);
+    else if (currentInput !== '') currentInput = '-' + currentInput;
+  } else if (key === '.') {
+    if (!currentInput.includes('.')) currentInput += '.';
+  } else {
+    if (currentInput === '0') currentInput = key;
+    else currentInput += key;
+    if (currentInput.length > 8) currentInput = currentInput.slice(0, 8);
+  }
+  updateScoreDisplay();
+}
+
+function submitScore() {
+  if (!modalContext) return;
+  const { roundIndex, playerIndex } = modalContext;
+  const val = parseFloat(currentInput);
+  state.rounds[roundIndex][playerIndex] = isNaN(val) ? 0 : val;
+
+  let lastActive = 0;
+  state.rounds.forEach((r, i) => { if (r.some(s => s !== null)) lastActive = i; });
+  state.activeRound = lastActive;
+
+  closeModal();
+  renderGame();
+  checkWinConditions();
+  save();
+}
+
+function checkWinConditions() {
+  const totals = computeTotals();
+
+  if (state.maxScore !== null) {
+    const idx = totals.findIndex(t => t !== null && t >= state.maxScore);
+    if (idx !== -1) {
+      showMaxAlert(`${state.players[idx].name} hit ${state.maxScore}! Game over!`);
+      setTimeout(endGame, 2000);
+      return;
+    }
+  }
+
+  if (state.maxRounds !== null && state.rounds.length >= state.maxRounds) {
+    const last = state.rounds[state.maxRounds - 1];
+    if (last && last.every(s => s !== null)) setTimeout(endGame, 400);
+  }
+}
+
+function showMaxAlert(msg) {
+  const el = document.getElementById('max-alert');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 3000);
+}
+
+// ═══════════════════════════════════════════
+// END GAME
+// ═══════════════════════════════════════════
+
+function confirmEndGame() { document.getElementById('confirm-dialog').classList.add('open'); }
+function closeConfirm() { document.getElementById('confirm-dialog').classList.remove('open'); }
+
+function endGame() {
+  closeConfirm();
+  state.phase = 'summary';
+  renderSummary();
+  showScreen('summary');
+  spawnConfetti();
+  save();
+}
+
+// ═══════════════════════════════════════════
+// SUMMARY
+// ═══════════════════════════════════════════
+
+const WINNER_MSGS = [
+  "Absolutely crushed it! 🔥",
+  "The card shark has spoken! 🦈",
+  "All hail the champion! 🎉",
+  "Nobody saw that coming! 🎊",
+  "Legendary performance! ⚡",
+  "The table has been swept! 🃏",
+  "Too good, too fast, too smart! 🧠",
+  "Victory lap time! 🏆",
+];
+
+function renderSummary() {
+  const totals = computeTotals();
+  const ranked = state.players
+    .map((p, i) => ({ name: p.name, total: totals[i] ?? 0, rounds: state.rounds.filter(r => r[i] !== null).length }))
+    .sort((a, b) => state.highScoreWins ? b.total - a.total : a.total - b.total);
+
+  const winner = ranked[0];
+  const tagline = WINNER_MSGS[Math.floor(Math.random() * WINNER_MSGS.length)];
+  document.getElementById('winner-card').innerHTML = `
+    <span class="winner-trophy">🏆</span>
+    <div class="winner-title">Winner</div>
+    <div class="winner-name">${esc(winner.name)}</div>
+    <div class="winner-score">${winner.total} points · ${winner.rounds} round${winner.rounds !== 1 ? 's' : ''}</div>
+    <div class="winner-tagline">${tagline}</div>
+  `;
+
+  const rankClasses = ['rank-1','rank-2','rank-3','rank-4'];
+  const lastPlaceEmojis = ['🤦','💀','🫠','🪦','😭','🤯','😵‍💫','🙈','🫣','😤'];
+  const rankEmojis = ['🥇','🥈','🥉', lastPlaceEmojis[Math.floor(Math.random() * lastPlaceEmojis.length)]];
+  document.getElementById('final-scores').innerHTML =
+    '<h3>Final Standings</h3>' +
+    ranked.map((p, r) => `
+      <div class="score-rank-row">
+        <div class="rank-num ${rankClasses[r] || 'rank-4'}">${rankEmojis[r] || r+1}</div>
+        <div class="rank-name">${esc(p.name)}</div>
+        <div>
+          <div class="rank-score">${p.total}</div>
+          <div class="rank-rounds">${p.rounds} round${p.rounds !== 1 ? 's' : ''}</div>
+        </div>
+      </div>
+    `).join('');
+}
+
+function spawnConfetti() {
+  const area = document.getElementById('confetti-area');
+  area.innerHTML = '';
+  const colors = ['#fbbf24','#818cf8','#34d399','#f87171','#60a5fa','#f472b6'];
+  for (let i = 0; i < 70; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.cssText = `
+      left:${Math.random()*100}vw;
+      background:${colors[i % colors.length]};
+      animation-duration:${1.5 + Math.random()*3}s;
+      animation-delay:${Math.random()*1.5}s;
+      transform:rotate(${Math.random()*360}deg);
+      opacity:${0.7 + Math.random()*0.3};
+    `;
+    area.appendChild(el);
+  }
+}
+
+// ═══════════════════════════════════════════
+// NAVIGATION & PERSISTENCE
+// ═══════════════════════════════════════════
+
+function playAgain() {
+  state.rounds = [new Array(state.players.length).fill(null)];
+  state.activeRound = 0;
+  state.phase = 'game';
+  renderGame();
+  showScreen('game');
+  save();
+}
+
+function newGame() {
+  state.phase = 'setup';
+  state.rounds = [];
+  showScreen('setup');
+  renderSetup();
+  document.getElementById('max-score-input').value = '';
+  document.getElementById('max-rounds-input').value = '';
+}
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(name).classList.add('active');
+}
+
+function save() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (_) {}
+}
+
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    if (s && s.players && s.players.length) { state = s; return true; }
+  } catch (_) {}
+  return false;
+}
+
+function esc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ═══════════════════════════════════════════
+// PIN
+// ═══════════════════════════════════════════
+
+const CORRECT_PIN = '8675309';
+let pinInput = '';
+
+function updatePinDisplay() {
+  const d = i => pinInput[i] || '·';
+  document.getElementById('pin-display').textContent =
+    `${d(0)}${d(1)}${d(2)}–${d(3)}${d(4)}${d(5)}${d(6)}`;
+}
+
+function pinPress(digit) {
+  if (pinInput.length >= 7) return;
+  pinInput += digit;
+  updatePinDisplay();
+  if (pinInput.length === 7) setTimeout(checkPin, 160);
+}
+
+function pinDel() {
+  if (!pinInput.length) return;
+  pinInput = pinInput.slice(0, -1);
+  updatePinDisplay();
+}
+
+function checkPin() {
+  const display = document.getElementById('pin-display');
+  const msg = document.getElementById('pin-wrong-msg');
+  if (pinInput === CORRECT_PIN) {
+    display.classList.add('success');
+    sessionStorage.setItem('ggt-auth', '1');
+    setTimeout(launchApp, 500);
+  } else {
+    display.classList.add('error');
+    msg.classList.add('visible');
+    setTimeout(() => {
+      display.classList.remove('error');
+      msg.classList.remove('visible');
+      pinInput = '';
+      updatePinDisplay();
+    }, 900);
+  }
+}
+
+function launchApp() {
+  const restored = load();
+  if (restored && state.phase === 'game') { renderGame(); showScreen('game'); }
+  else if (restored && state.phase === 'summary') { renderSummary(); showScreen('summary'); spawnConfetti(); }
+  else { showScreen('setup'); renderSetup(); }
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+
+(function init() {
+  if (sessionStorage.getItem('ggt-auth') === '1') {
+    launchApp();
+  } else {
+    showScreen('pin-screen');
+  }
+})();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
