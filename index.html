@@ -879,15 +879,16 @@
 // STATE
 // ═══════════════════════════════════════════
 const SAVE_KEY = 'card-score-tracker-v2';
+const DEFAULT_ROSTER = [
+  { name: 'Louie', active: true },
+  { name: 'Robin', active: true },
+  { name: 'Alec', active: true },
+  { name: 'Ella', active: true },
+];
 
 let state = {
   phase: 'setup',
-  roster: [
-    { name: 'Louie', active: true },
-    { name: 'Robin', active: true },
-    { name: 'Alec', active: true },
-    { name: 'Ella', active: true },
-  ],
+  roster: DEFAULT_ROSTER.map(p => ({ ...p })),
   players: [],
   highScoreWins: true,
   maxScore: null,
@@ -1360,6 +1361,7 @@ function playAgain() {
 function newGame() {
   state.phase = 'setup';
   state.rounds = [];
+  state.roster = DEFAULT_ROSTER.map(p => ({ ...p }));
   showScreen('setup');
   renderSetup();
   document.getElementById('max-score-input').value = '';
