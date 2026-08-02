@@ -285,10 +285,10 @@
     }
     .end-btn:active { background: rgba(248,113,113,0.3); }
 
-    /* Column grid: fixed label col + equal player cols */
+    /* Column grid: fixed label col + equal player cols, min wide enough for 4 digits */
     .score-grid {
       display: grid;
-      grid-template-columns: var(--col-label) repeat(var(--players), 1fr);
+      grid-template-columns: var(--col-label) repeat(var(--players), minmax(44px, 1fr));
     }
 
     /* ── Names header band ── */
@@ -298,6 +298,7 @@
       border-bottom: 2px solid var(--primary);
     }
     .names-band .grid-cell { padding: 10px 4px; min-height: 46px; }
+    .names-band.names-rotated .grid-cell { min-height: 92px; padding: 6px 2px; align-items: flex-end; }
 
     .cell-name {
       font-size: 0.82rem;
@@ -307,6 +308,14 @@
       text-overflow: ellipsis;
       white-space: nowrap;
       transition: color 0.2s, background 0.2s;
+    }
+    .cell-name.rotated {
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      white-space: nowrap;
+      overflow: visible;
+      text-overflow: clip;
+      text-align: left;
     }
     .cell-name.winner { color: var(--gold); background: rgba(251,191,36,0.22); }
 
@@ -1041,6 +1050,17 @@ function renderGame() {
   }
 
   updateHighlights();
+  requestAnimationFrame(checkNameRotation);
+}
+
+function checkNameRotation() {
+  const band = document.getElementById('names-band');
+  if (!band) return;
+  const cells = [...band.querySelectorAll('.cell-name')];
+  if (!cells.length) return;
+  const needsRotation = cells.some(cell => cell.scrollWidth > cell.clientWidth + 1);
+  band.classList.toggle('names-rotated', needsRotation);
+  cells.forEach(cell => cell.classList.toggle('rotated', needsRotation));
 }
 
 function computeTotals() {
