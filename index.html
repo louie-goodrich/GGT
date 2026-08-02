@@ -1230,7 +1230,14 @@ function showMaxAlert(msg) {
 // END GAME
 // ═══════════════════════════════════════════
 
-function confirmEndGame() { document.getElementById('confirm-dialog').classList.add('open'); }
+function confirmEndGame() {
+  const round = state.rounds[state.activeRound];
+  if (round && round.some(s => s === null)) {
+    showMaxAlert(`Enter all scores for Round ${state.activeRound + 1} first!`);
+    return;
+  }
+  document.getElementById('confirm-dialog').classList.add('open');
+}
 function closeConfirm() { document.getElementById('confirm-dialog').classList.remove('open'); }
 
 function endGame() {
