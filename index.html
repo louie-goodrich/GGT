@@ -997,6 +997,7 @@ function startGame() {
   state.maxRounds = mr > 0 ? mr : null;
   state.rounds = [new Array(state.players.length).fill(null)];
   state.activeRound = 0;
+  state.pendingEnd = false;
   state.phase = 'game';
   renderGame();
   showScreen('game');
@@ -1381,6 +1382,7 @@ function playAgain() {
 function newGame() {
   state.phase = 'setup';
   state.rounds = [];
+  state.pendingEnd = false;
   state.roster = DEFAULT_ROSTER.map(p => ({ ...p }));
   showScreen('setup');
   renderSetup();
